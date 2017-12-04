@@ -1,29 +1,20 @@
 ;;; -*- lexical-binding: t; -*-
 
-(defun typer-insert (arg)
-  (interactive)
-  (read-only-mode 0)
-  (insert arg)
-  (read-only-mode 1))
-
-(defun typer-delete (n)
-  (read-only-mode 0)
-  (delete-char n)
-  (read-only-mode 1))
+(defmacro typer-do (&rest body)
+  "Disable `read-only-mode', evaluate BODY, then enable it again"
+  `(progn (read-only-mode 0) ,@body (read-only-mode 1)))
 
 (defun typer-handle-match ()
-  (read-only-mode 0)
-  (delete-char 1)
-  (if (string= (string (following-char)) "\n")
-	  (progn
-		(move-beginning-of-line nil)
-		(kill-line))
-	(insert " "))
-  (setq typer-point (point))
-  (read-only-mode 1))
+  (typer-do
+   (delete-char 1)
+   (if (string= (string (following-char)) "\n")
+	   (progn
+		 (move-beginning-of-line nil)
+		 (kill-line))
+	 (insert " "))
+   (setq typer-point (point))))
 
 (defun typer-handle-char (arg)
-  (interactive)
   (if (string= (string (following-char)) arg)
 	  (typer-handle-match)))
 
@@ -43,9 +34,6 @@
   (set (make-local-variable 'typer-point) (point-min))
   (add-hook 'post-command-hook 'typer-post-command-hook nil :local))
 
-(defun insert-words ()
-  (typer-insert "hello\nsome\nwords\nin a list\n atc"))
-
 (defun typer ()
   (interactive)
   (let ((buffer-name "*Typer*"))
@@ -53,5 +41,6 @@
 					   (selected-window)))
 	(switch-to-buffer buffer-name))
   (typer-mode)
-  (insert-words)
+  (typer-do (erase-buffer))
+  (typer-do (insert "hello\nsome\nwords\nin a list\n atc"))
   (goto-char (point-min)))
