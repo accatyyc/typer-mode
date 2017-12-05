@@ -25,11 +25,13 @@
 	  (typer-handle-match)
 	(typer-handle-miss)))
 
-(setq typer-mode-map
+(defun typer-insert-command ()
+  (interactive)
+  (typer-handle-char (this-command-keys)))
+
+(defvar typer-mode-map
   (let ((map (make-sparse-keymap)))
-	(dolist (key (split-string "abcdefghijklmnopqrstuvwxyz" ""))
-	  (define-key map (kbd key) (lambda () (interactive)(typer-handle-char key))))
-	(define-key map (kbd "SPC") (lambda () (interactive)(typer-handle-char " ")))
+	(define-key map [remap self-insert-command] 'typer-insert-command)
 	map))
 
 (defun typer-post-command-hook ()
