@@ -14,9 +14,16 @@
 	 (insert " "))
    (setq typer-point (point))))
 
+(defun typer-handle-miss ()
+  (typer-do
+   (goto-char (point-max))
+   (insert (typer-random-sentence 2))
+   (goto-char typer-point)))
+
 (defun typer-handle-char (arg)
   (if (string= (string (following-char)) arg)
-	  (typer-handle-match)))
+	  (typer-handle-match)
+	(typer-handle-miss)))
 
 (setq typer-mode-map
   (let ((map (make-sparse-keymap)))
@@ -34,6 +41,23 @@
   (set (make-local-variable 'typer-point) (point-min))
   (add-hook 'post-command-hook 'typer-post-command-hook nil :local))
 
+(defun typer-random-word ()
+  (goto-char (random (point-max)))
+  (backward-word)
+  (mark-word)
+  (downcase (buffer-substring-no-properties (mark) (point))))
+
+(defun typer-random-sentence (n)
+  (with-temp-buffer
+	(info "(efaq)" (buffer-name))
+	(let ((string ""))
+	  (dotimes (i n)
+		(setq string (concat string (typer-random-word)))
+		(dotimes (i (random 3))
+		  (setq string (concat string " " (typer-random-word))))
+		(setq string (concat string "\n")))
+	  string)))
+
 (defun typer ()
   (interactive)
   (let ((buffer-name "*Typer*"))
@@ -41,6 +65,7 @@
 					   (selected-window)))
 	(switch-to-buffer buffer-name))
   (typer-mode)
-  (typer-do (erase-buffer))
-  (typer-do (insert "hello\nsome\nwords\nin a list\n atc"))
+  (typer-do
+   (erase-buffer)
+   (insert (typer-random-sentence 10)))
   (goto-char (point-min)))
