@@ -17,7 +17,7 @@
 (defun typer-handle-miss ()
   (typer-do
    (goto-char (point-max))
-   (insert (typer-random-sentence 2))
+   (insert (typer-random-sentences 2))
    (goto-char typer-point)))
 
 (defun typer-handle-char (arg)
@@ -43,21 +43,21 @@
   (set (make-local-variable 'typer-point) (point-min))
   (add-hook 'post-command-hook 'typer-post-command-hook nil :local))
 
-(defun typer-random-word ()
+(defun typer-random-words (n)
   (goto-char (random (point-max)))
   (backward-word)
   (mark-word)
-  (downcase (buffer-substring-no-properties (mark) (point))))
+  (let ((word (downcase (buffer-substring-no-properties (mark) (point)))))
+	(if (eq 1 n)
+		word
+	  (concat word " " (typer-random-words (- n 1))))))
 
-(defun typer-random-sentence (n)
+(defun typer-random-sentences (n)
   (with-temp-buffer
 	(info "(efaq)" (buffer-name))
 	(let ((string ""))
 	  (dotimes (i n)
-		(setq string (concat string (typer-random-word)))
-		(dotimes (i (random 3))
-		  (setq string (concat string " " (typer-random-word))))
-		(setq string (concat string "\n")))
+		(setq string (concat string (typer-random-words (+ 1 (random 3))) "\n")))
 	  string)))
 
 (defun typer ()
@@ -69,5 +69,5 @@
   (typer-mode)
   (typer-do
    (erase-buffer)
-   (insert (typer-random-sentence 10)))
+   (insert (typer-random-sentences 10)))
   (goto-char (point-min)))
