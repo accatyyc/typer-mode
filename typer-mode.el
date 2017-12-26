@@ -20,6 +20,18 @@
    (insert (typer-random-sentences 2))
    (goto-char typer-point)))
 
+(defun typer-game-over ()
+  (typer-do
+   (setq typer-state :typer-game-over)
+   (erase-buffer)
+   (insert "Game over!")
+   (setq cursor-type nil)))
+
+(defun typer-check-state ()
+  (let ((line-count (count-lines (point-min) (point-max))))
+	(if (>= line-count 20)
+		(typer-game-over))))
+
 (defun typer-handle-char (arg)
   (if (string= (string (following-char)) arg)
 	  (typer-handle-match)
@@ -27,7 +39,9 @@
 
 (defun typer-insert-command ()
   (interactive)
-  (typer-handle-char (this-command-keys)))
+  (when (equal (symbol-value typer-state) :typer-playing)
+	(typer-handle-char (this-command-keys))
+	(typer-check-state)))
 
 (defvar typer-mode-map
   (let ((map (make-sparse-keymap)))
@@ -41,6 +55,7 @@
   "A game for practising typing speed"
   (read-only-mode 1)
   (set (make-local-variable 'typer-point) (point-min))
+  (set (make-local-variable 'typer-state) :typer-playing)
   (add-hook 'post-command-hook 'typer-post-command-hook nil :local))
 
 (defun typer-random-words (n)
