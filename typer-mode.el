@@ -1,4 +1,32 @@
 ;;; -*- lexical-binding: t; -*-
+
+(defgroup typer nil
+  "Practise your keyboard typing speed."
+  :prefix "typer-"
+  :group 'games)
+
+(defcustom typer-max-lines 20
+  "If more than this amount of lines are added to the typer buffer, the game ends."
+  :group 'typer
+  :type 'number)
+
+(defcustom typer-buffer-name "*Typer*"
+  "Name used for Typer buffer."
+  :group 'typer
+  :type 'string)
+
+(defcustom typer-min-words-per-line 1
+  "The minimum number of words per line. Each line contains a number of words
+  between this and typer-max-words-per-line."
+  :group 'typer
+  :type 'integer)
+
+(defcustom typer-max-words-per-line 3
+  "The minimum number of words per line. Each line contains a number of words
+  between this and typer-min-words-per-line."
+  :group 'typer
+  :type 'integer)
+
 (defmacro typer-do (&rest body)
   "Disable `read-only-mode', evaluate BODY, then enable it again"
   `(progn (read-only-mode 0) ,@body (read-only-mode 1)))
@@ -43,7 +71,7 @@
 
 (defun typer-check-state ()
   (let ((line-count (count-lines (point-min) (point-max))))
-	(when (>= line-count 20)
+	(when (>= line-count typer-max-lines)
 		(typer-game-over))))
 
 (defun typer-handle-char (arg)
@@ -78,33 +106,43 @@
   (defvar-local typer-line-queue '())
   (defvar-local typer-animation-timer nil)
   (add-hook 'post-command-hook 'typer-post-command-hook nil :local)
-  (add-hook 'kill-buffer-hook 'typer-kill-buffer-hook nil :local))
-
-(defun typer-random-words (n)
-  (goto-char (random (point-max)))
-  (backward-word)
-  (mark-word)
-  (let ((word (downcase (buffer-substring-no-properties (mark) (point)))))
-	(if (eq 1 n)
-		word
-	  (concat word " " (typer-random-words (1- n))))))
-
-(defun typer-random-sentences (n)
-  (with-temp-buffer
-	(info "(efaq)" (buffer-name))
-	(let ((string (typer-random-words (1+ (random 3)))))
-	  (dotimes (i (1- n))
-		(setq string (concat string "\n" (typer-random-words (1+ (random 3))))))
-	  string)))
-
-(defun typer ()
-  (interactive)
-  (let ((buffer-name "*Typer*"))
-	(select-window (or (get-buffer-window buffer-name)
-					   (selected-window)))
-	(switch-to-buffer buffer-name))
-  (typer-mode)
+  (add-hook 'kill-buffer-hook 'typer-kill-buffer-hook nil :local)
   (typer-do
    (erase-buffer)
    (insert (typer-random-sentences 10)))
   (goto-char (point-min)))
+
+(defun typer-random-between (min max)
+  (if (<= max min)
+	  min
+	(+ min (random (1+ (- max min))))))
+
+(defun typer-random-words-from-current-buffer (n)
+  (if (< n 1)
+	  nil
+	(goto-char (random (point-max)))
+	(backward-word)
+	(mark-word)
+	(let ((word (downcase (buffer-substring-no-properties (mark) (point)))))
+	  (cons word (typer-random-words-from-current-buffer (1- n))))))
+
+(defun typer-random-sentences-from-current-buffer (n)
+  (if (> n 0)
+	  (let* ((word-count (typer-random-between typer-min-words-per-line typer-max-words-per-line))
+			 (words (typer-random-words-from-current-buffer word-count))
+			 (sentence (mapconcat 'identity words " ")))
+		(cons sentence (typer-random-sentences-from-current-buffer (1- n))))
+	nil))
+
+(defun typer-random-sentences (n)
+  "Opens efaq in a temporary buffer and generates sentences from there."
+  (with-temp-buffer
+	(info "(efaq)" (buffer-name))
+	(mapconcat 'identity (typer-random-sentences-from-current-buffer n) "\n")))
+
+(defun typer ()
+  (interactive)
+  (select-window (or (get-buffer-window typer-buffer-name)
+					 (selected-window)))
+  (switch-to-buffer typer-buffer-name)
+  (typer-mode))
