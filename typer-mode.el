@@ -135,9 +135,9 @@
 	nil))
 
 (defun typer-random-sentences (n)
-  "Opens efaq in a temporary buffer and generates sentences from there."
+  "Opens the elisp manual in a temporary buffer and generates sentences from there."
   (with-temp-buffer
-	(info "(efaq)" (buffer-name))
+	(info "(elisp)" (buffer-name))
 	(mapconcat 'identity (typer-random-sentences-from-current-buffer n) "\n")))
 
 (defun typer ()
